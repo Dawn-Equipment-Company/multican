@@ -3,6 +3,7 @@ use crate::{CanMessage, CanNetwork};
 use socketcan::{CANFrame, CANSocket};
 use std::time;
 
+/// SocketCAN adapter for mulitcan
 pub struct SocketCanNetwork {
     socket: CANSocket,
     pub bus: u8,

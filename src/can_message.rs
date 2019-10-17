@@ -2,28 +2,36 @@ use std::fmt;
 
 #[derive(Clone)]
 pub struct CanMessage {
+    /// 29 bit CAN header
     pub header: u32,
+    /// Message payload
     pub data: Vec<u8>,
+    /// Bus index
     pub bus: u8,
 }
 
 impl CanMessage {
+    /// Gets the data length
     pub fn dlc(&self) -> usize {
         self.data.len()
     }
 
+    /// Source address
     pub fn sa(&self) -> u8 {
         (self.header & 0x0000_00FF) as u8
     }
 
+    /// Destination address
     pub fn da(&self) -> u8 {
         ((self.header & 0x0000_FF00) >> 8) as u8
     }
 
+    /// Parameter group number
     pub fn pgn(&self) -> u16 {
         ((self.header & 0x00FF_FF00) >> 8) as u16
     }
 
+    /// Serializes a CAN message into a byte vector
     pub fn into_bytes(self) -> Vec<u8> {
         let mut v = vec![
             ((self.header & 0xFF00_0000) >> 24) as u8,
@@ -36,6 +44,7 @@ impl CanMessage {
         v
     }
 
+    /// Deserializes a CAN message from bytes
     pub fn from_bytes(bytes: &[u8]) -> CanMessage {
         if bytes.len() < 5 {
             println!("error message too short");

@@ -26,11 +26,28 @@ pub use self::can_pcan::PcanNetwork;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanConfig {
+    /// Bus identifier, can be set to any value.  Use to specify the tx/rs bus for a CanMessage
     pub id: u8,
     // can i make this an enum?
+    /// Bus type - udp, socketcan, pcan
     pub kind: String,
 }
 
+/// Initializes a group of CAN adapters from the specified configuration
+///
+/// Typical entry point for this library.  CanConfig can be read from a config file
+/// or created manually.  Not required to create a multican instance, but useful.
+///
+/// # Example
+///
+/// ```
+/// // Set up adapters
+/// let adapters = setup_can(config);
+/// let network = MultiCan::new(&mut adapters);
+/// for m in network.recv() {
+///     println!("RX: {:?}", m);
+/// }
+/// ```
 pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork>> {
     let mut adapters: Vec<Box<dyn CanNetwork>> = Vec::new();
     for net_config in config {

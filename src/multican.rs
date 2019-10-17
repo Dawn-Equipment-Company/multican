@@ -8,6 +8,7 @@ pub struct MultiCan {
 }
 
 impl MultiCan {
+    /// Creates a new MultiCan instance given a vector of networks
     pub fn new(adapters: &mut Vec<Box<CanNetwork>>) -> Self {
         let mut networks = HashMap::new();
         // TODO: use config id number as the index
@@ -25,6 +26,7 @@ impl MultiCan {
         MultiCan { networks }
     }
 
+    /// Sends a single CAN message on the bus specified by the message 
     pub fn send(&mut self, msg: CanMessage) {
         match self.networks.entry(msg.bus) {
             Entry::Occupied(n) => {
@@ -34,6 +36,7 @@ impl MultiCan {
         };
     }
 
+    /// Receives messages from any configured bus
     pub fn recv(&mut self) -> Vec<CanMessage> {
         let mut messages: Vec<CanMessage> = Vec::new();
 
