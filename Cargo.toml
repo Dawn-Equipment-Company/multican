@@ -1,0 +1,20 @@
+[package]
+name = "can"
+version = "0.1.0"
+authors = ["Nick Gamroth <thebeekeeper@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+serde = "1.0"
+serde_derive = "1.0"
+
+[target.'cfg(unix)'.dependencies]
+socketcan = "1.7.0"
+
+[target.'cfg(windows)'.dependencies]
+pcan-basic-sys = "0.2.0"
+
+[dependencies.socket2]
+version = "0.3.8"
+features = ["reuseport"]
