@@ -29,7 +29,7 @@ impl CanMessage {
     /// Parameter group number
     pub fn pgn(&self) -> u16 {
         // destination specific, and out the destination address
-        if (self.header & 0x00FF_0000) < 240 {
+        if ((self.header & 0x00FF_0000) >> 16) < (0xEF as u32) {
             ((self.header & 0x00FF_0000) >> 8) as u16
         }
         else {
@@ -82,6 +82,7 @@ mod tests {
     #[test]
     fn dlc_as_fn() {
         let cm = CanMessage {
+            bus: 0,
             header: 0x18234455,
             data: vec![1, 2, 3, 4, 5],
         };
@@ -91,6 +92,7 @@ mod tests {
     #[test]
     fn verify_sa() {
         let cm = CanMessage {
+            bus: 0,
             header: 0x18234455,
             data: vec![1, 2, 3, 4, 5],
         };
@@ -100,6 +102,7 @@ mod tests {
     #[test]
     fn verify_da() {
         let cm = CanMessage {
+            bus: 0,
             header: 0x18234455,
             data: vec![1, 2, 3, 4, 5],
         };
@@ -107,12 +110,24 @@ mod tests {
     }
 
     #[test]
-    fn verify_pgn() {
+    fn verify_dest_specific_pgn() {
         let cm = CanMessage {
+            bus: 0,
             header: 0x18234455,
             data: vec![1, 2, 3, 4, 5],
         };
-        assert_eq!(0x2344, cm.pgn());
+        assert_eq!(0x2300, cm.pgn());
+    }
+
+    #[test]
+    fn verify_global_pgn() {
+        let cm = CanMessage {
+            bus: 0,
+            header: 0x18EF9922,
+            data: vec![1, 2, 3, 4, 5],
+        };
+        let pgn = cm.pgn();
+        assert_eq!(0xEF99, pgn);
     }
 
 }

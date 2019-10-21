@@ -84,6 +84,7 @@ impl Drop for PcanNetwork {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,3 +106,4 @@ mod tests {
         println!("rx: {:?}", rx);
     }
 }
+*/
