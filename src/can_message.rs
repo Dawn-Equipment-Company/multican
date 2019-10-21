@@ -21,14 +21,20 @@ impl CanMessage {
         (self.header & 0x0000_00FF) as u8
     }
 
-    /// Destination address
+    /// Destination address.  Only valid if this message is destination specific
     pub fn da(&self) -> u8 {
         ((self.header & 0x0000_FF00) >> 8) as u8
     }
 
     /// Parameter group number
     pub fn pgn(&self) -> u16 {
-        ((self.header & 0x00FF_FF00) >> 8) as u16
+        // destination specific, and out the destination address
+        if (self.header & 0x00FF_0000) < 240 {
+            ((self.header & 0x00FF_0000) >> 8) as u16
+        }
+        else {
+            ((self.header & 0x00FF_FF00) >> 8) as u16
+        }
     }
 
     /// Serializes a CAN message into a byte vector
