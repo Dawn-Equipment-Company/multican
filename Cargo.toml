@@ -1,9 +1,13 @@
 [package]
-name = "can"
+name = "multican"
 version = "0.1.1"
 authors = ["Nick Gamroth <thebeekeeper@gmail.com>"]
 edition = "2018"
 readme = "README.md"
+description = "Provides connections to multiply CAN busses at the same time.  Allows use of different types of networks"
+repository = "https://github.com/Dawn-Equipment-Company/multican"
+keywords = ["can", "canbus", "socketcan", "pcan"]
+license = "MIT"
 
 [dependencies]
 log = "0.4"
