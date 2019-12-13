@@ -48,8 +48,8 @@ pub struct CanConfig {
 ///     println!("RX: {:?}", m);
 /// }
 /// ```
-pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork>> {
-    let mut adapters: Vec<Box<dyn CanNetwork>> = Vec::new();
+pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork + Send>> {
+    let mut adapters: Vec<Box<dyn CanNetwork + Send>> = Vec::new();
     for net_config in config {
         if net_config.kind == "udp" {
             adapters.push(Box::new(UdpNetwork::new(net_config.id)));
