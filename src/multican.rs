@@ -4,12 +4,12 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 pub struct MultiCan {
-    networks: HashMap<u8, Box<CanNetwork>>,
+    networks: HashMap<u8, Box<dyn CanNetwork + Send>>,
 }
 
 impl MultiCan {
     /// Creates a new MultiCan instance given a vector of networks
-    pub fn new(adapters: &mut Vec<Box<CanNetwork>>) -> Self {
+    pub fn new(adapters: &mut Vec<Box<dyn CanNetwork + Send>>) -> Self {
         let mut networks = HashMap::new();
         // TODO: use config id number as the index
         // pop puts them in the wrong order, so reverse it
