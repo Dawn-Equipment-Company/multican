@@ -56,7 +56,7 @@ pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork + Send>> {
         } else if net_config.kind == "socketcan" {
             #[cfg(unix)]
             {
-                adapters.push(Box::new(SocketCanNetwork::new(net_config.id)));
+                adapters.push(Box::new(SocketCanNetwork::new(net_config.id, "can")));
             }
             #[cfg(windows)]
             {

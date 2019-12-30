@@ -41,11 +41,11 @@ impl Drop for SocketCanNetwork {
 }
 
 impl SocketCanNetwork {
-    pub fn new(bus: u8) -> Self {
+    pub fn new(bus: u8, id: &'static str) -> Self {
         // remember, the owa4x starts at can1 instead of can0
         let bus = bus + 1;
         debug!("Initializing bus #{}", bus);
-        let bus_id = format!("can{}", bus);
+        let bus_id = format!("{}{}", id, bus);
         debug!("Opening bus number {} - id: {}", bus, bus_id);
         let socket = CANSocket::open(&bus_id).expect("Failed to open bus");
         socket
