@@ -37,26 +37,32 @@ pub struct CanConfig {
 ///
 /// Typical entry point for this library.  CanConfig can be read from a config file
 /// or created manually.  Not required to create a multican instance, but useful.
+/// 
+/// Note that this function contains some sane defaults, but you may need to 
+/// customize things like the can network prefix.  If this is the case, construct
+/// your adaters manuall and use add_adapter
 ///
 /// # Example
 ///
 /// ```
 /// // Set up adapters
-/// let adapters = setup_can(config);
-/// let network = MultiCan::new(&mut adapters);
+/// let cfg = read_config("myfile.toml");
+/// let mut network = multican::from_config(cfg);
 /// for m in network.recv() {
 ///     println!("RX: {:?}", m);
 /// }
 /// ```
-pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork + Send>> {
-    let mut adapters: Vec<Box<dyn CanNetwork + Send>> = Vec::new();
+pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
+	let mut mc = MultiCan::new();
     for net_config in config {
         if net_config.kind == "udp" {
-            adapters.push(Box::new(UdpNetwork::new(net_config.id)));
+			mc.add_adapter(net_config.id, Box::new(UdpNetwork::new(net_config.id)));
         } else if net_config.kind == "socketcan" {
             #[cfg(unix)]
             {
-                adapters.push(Box::new(SocketCanNetwork::new(net_config.id, "can")));
+				// adding a parameter for the prefix would be nice for socketcan
+				// otherwise i can't use this for can/vcan
+				mc.add_adapter(net_config.id, Box::new(SocketCanNetwork::new(net_config.id, "vcan")));
             }
             #[cfg(windows)]
             {
@@ -69,11 +75,11 @@ pub fn setup_can(config: Vec<CanConfig>) -> Vec<Box<dyn CanNetwork + Send>> {
             }
             #[cfg(windows)]
             {
-                adapters.push(Box::new(PcanNetwork::new()));
+				mc.add_adapter(net_config.id, Box::new(PcanNetwork::new()));
             }
         } else {
             error!("Unknown CAN network type: {}", net_config.kind);
         }
     }
-    adapters
+	mc
 }

@@ -36,7 +36,7 @@ impl CanNetwork for SocketCanNetwork {
 
 impl Drop for SocketCanNetwork {
     fn drop(&mut self) {
-        println!("TODO: Closing socketcan connection");
+		// is there anything to drop?
     }
 }
 

@@ -76,34 +76,10 @@ impl PcanNetwork {
 
 impl Drop for PcanNetwork {
     fn drop(&mut self) {
-        println!("Dropping PCAN network");
+        debug!("Dropping PCAN network");
         unsafe {
             let r = pcan::CAN_Uninitialize(pcan::PCAN_USBBUS1 as u16);
-            println!("uninit result: {}", r);
         }
     }
 }
 
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    //#[test]
-    fn send_works() {
-        let mut pcan = PcanNetwork::new();
-        pcan.send(CanMessage {
-            header: 0x1234,
-            data: vec![1, 2, 3, 4, 5, 6, 7, 8],
-            bus: 0,
-        });
-    }
-
-    #[test]
-    fn recv_works() {
-        let mut pcan = PcanNetwork::new();
-        let rx = pcan.recv();
-        println!("rx: {:?}", rx);
-    }
-}
-*/

@@ -36,7 +36,7 @@ impl CanNetwork for UdpNetwork {
 
 impl Drop for UdpNetwork {
     fn drop(&mut self) {
-        println!("Closing UDP connection");
+        trace!("Closing UDP connection");
     }
 }
 

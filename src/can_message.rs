@@ -53,7 +53,7 @@ impl CanMessage {
     /// Deserializes a CAN message from bytes
     pub fn from_bytes(bytes: &[u8]) -> CanMessage {
         if bytes.len() < 5 {
-            println!("error message too short");
+            error!("error message too short");
         }
         let header = (u32::from(bytes[0]) << 24)
             | (u32::from(bytes[1]) << 16)
