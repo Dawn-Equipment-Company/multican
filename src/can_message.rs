@@ -31,8 +31,7 @@ impl CanMessage {
         // destination specific, and out the destination address
         if ((self.header & 0x00FF_0000) >> 16) < (0xEF as u32) {
             ((self.header & 0x00FF_0000) >> 8) as u16
-        }
-        else {
+        } else {
             ((self.header & 0x00FF_FF00) >> 8) as u16
         }
     }
@@ -71,7 +70,8 @@ impl CanMessage {
 
 impl fmt::Debug for CanMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:\t0x{:X}\t{:?}", self.bus, self.header, self.data)
+        //let d = self.data.iter().map(|b| format!("{:X}", b)).collect::<String>().join(" ");
+        write!(f, "{}:\t0x{:X}\t{:02X?}", self.bus, self.header, self.data)
     }
 }
 
@@ -129,5 +129,4 @@ mod tests {
         let pgn = cm.pgn();
         assert_eq!(0xEF99, pgn);
     }
-
 }

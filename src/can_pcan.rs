@@ -1,4 +1,3 @@
-
 use can::{CanMessage, CanNetwork};
 use pcan_basic_sys as pcan;
 
@@ -82,4 +81,3 @@ impl Drop for PcanNetwork {
         }
     }
 }
-

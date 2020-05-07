@@ -1,4 +1,3 @@
-
 use crate::{CanMessage, CanNetwork};
 use socketcan::{CANFrame, CANSocket};
 use std::time;
@@ -36,13 +35,13 @@ impl CanNetwork for SocketCanNetwork {
 
 impl Drop for SocketCanNetwork {
     fn drop(&mut self) {
-		// is there anything to drop?
+        // is there anything to drop?
     }
 }
 
 impl SocketCanNetwork {
+    /// id is the network interface prefix, usually 'can' or 'vcan'
     pub fn new(bus: u8, id: &'static str) -> Self {
-        // note, the owa4x starts at can1 instead of can0
         debug!("Initializing bus #{}", bus);
         let bus_id = format!("{}{}", id, bus);
         debug!("Opening bus number {} - id: {}", bus, bus_id);

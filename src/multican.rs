@@ -9,14 +9,16 @@ pub struct MultiCan {
 
 impl MultiCan {
     pub fn new() -> Self {
-		MultiCan { networks: HashMap::new() }
-	}
+        MultiCan {
+            networks: HashMap::new(),
+        }
+    }
 
-	pub fn add_adapter(&mut self, id: u8, adapter: Box<dyn CanNetwork + Send>) {
-		self.networks.insert(id, adapter);
-	}
+    pub fn add_adapter(&mut self, id: u8, adapter: Box<dyn CanNetwork + Send>) {
+        self.networks.insert(id, adapter);
+    }
 
-    /// Sends a single CAN message on the bus specified by the message 
+    /// Sends a single CAN message on the bus specified by the message
     pub fn send(&mut self, msg: CanMessage) {
         match self.networks.entry(msg.bus) {
             Entry::Occupied(n) => {
