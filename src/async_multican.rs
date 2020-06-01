@@ -34,6 +34,7 @@ impl AsyncMultiCan {
     pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
     let mut n0 = AsyncSocketCanNetwork::new(0, "vcan");
     let mut n1 = AsyncSocketCanNetwork::new(1, "can");
+    let mut n2 = AsyncSocketCanNetwork::new(2, "can");
     let (mut tx, mut rx) = mpsc::channel(10);
     let mut tx1 = tx.clone();
     let t0 = tokio::spawn(async move {
@@ -63,6 +64,22 @@ impl AsyncMultiCan {
                     bus: 1,
                 };
             tx2.send(msg).await.unwrap();
+            }
+        }
+        }
+    });
+    let mut tx3 = tx.clone();
+    let t2 = tokio::spawn(async move {
+        loop {
+        while let Some(next) = n2.socket.next().await {
+            //println!("RX1: {:?}", next);
+            if let Ok(frame) = next {
+                let msg = CanMessage {
+                    header: frame.id(),
+                    data: frame.data().to_vec(),
+                    bus: 1,
+                };
+            tx3.send(msg).await.unwrap();
             }
         }
         }
