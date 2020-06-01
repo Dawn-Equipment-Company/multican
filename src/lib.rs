@@ -18,6 +18,12 @@ mod multican;
 pub mod message_codec;
 #[cfg(feature = "async-tokio")]
 pub mod async_can_udp;
+#[cfg(feature = "async-tokio")]
+pub mod async_socketcan;
+#[cfg(feature = "async-tokio")]
+pub mod async_multican;
+#[cfg(feature = "async-tokio")]
+mod tokio_socketcan;
 
 pub use self::can_message::CanMessage;
 pub use self::can_network::CanNetwork;
@@ -33,6 +39,10 @@ pub use self::message_codec::CanCodec;
 pub use self::async_can_udp::AsyncUdpNetwork;
 #[cfg(feature = "async-tokio")]
 pub use self::can_network::AsyncCanNetwork;
+#[cfg(feature = "async-tokio")]
+pub use self::async_socketcan::AsyncSocketCanNetwork;
+#[cfg(feature = "async-tokio")]
+pub use self::async_multican::AsyncMultiCan;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanConfig {
@@ -116,3 +126,47 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
     }
     mc
 }
+
+#[cfg(feature = "async-tokio")]
+pub fn from_config_async(config: Vec<CanConfig>) -> AsyncMultiCan {
+    let mut mc = AsyncMultiCan::new();
+    for net_config in config {
+        match net_config.kind {
+            CanBusType::SocketCan => {
+                #[cfg(unix)]
+                {
+                    mc.add_adapter(
+                        net_config.id,
+                        Box::new(AsyncSocketCanNetwork::new(net_config.id, "can")),
+                    );
+                }
+                #[cfg(windows)]
+                {
+                    panic!("Can't use SocketCAN on Windows");
+                }
+            }
+            CanBusType::VirtualSocketCan => {
+                #[cfg(unix)]
+                {
+                    mc.add_adapter(
+                        net_config.id,
+                        Box::new(AsyncSocketCanNetwork::new(net_config.id, "vcan")),
+                    );
+                }
+                #[cfg(windows)]
+                {
+                    panic!("Can't use SocketCAN on Windows");
+                }
+            }
+            CanBusType::Pcan => {
+                error!("PCAN adapter not implemented for async yet");
+            }
+            CanBusType::Udp => {
+                mc.add_adapter(net_config.id, Box::new(AsyncUdpNetwork::new(net_config.id)));
+            }
+        };
+    }
+
+    mc
+}
+
