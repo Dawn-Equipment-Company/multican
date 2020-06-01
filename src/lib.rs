@@ -14,6 +14,8 @@ mod can_pcan;
 mod can_socketcan;
 mod can_udp;
 mod multican;
+#[cfg(feature = "async-tokio")]
+pub mod message_codec;
 
 pub use self::can_message::CanMessage;
 pub use self::can_network::CanNetwork;
@@ -22,6 +24,9 @@ pub use self::can_pcan::PcanNetwork;
 pub use self::can_socketcan::SocketCanNetwork;
 pub use self::can_udp::UdpNetwork;
 pub use self::multican::MultiCan;
+
+#[cfg(feature = "async-tokio")]
+pub use self::message_codec::CanCodec;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanConfig {
