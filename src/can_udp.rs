@@ -1,5 +1,3 @@
-//extern crate socket2;
-
 use crate::{CanMessage, CanNetwork};
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
