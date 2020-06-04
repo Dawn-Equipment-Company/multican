@@ -1,11 +1,14 @@
 use crate::{CanMessage, CanNetwork};
 use socketcan::{CANFrame, CANSocket};
 use std::time;
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 /// SocketCAN adapter for mulitcan
 pub struct SocketCanNetwork {
-    socket: CANSocket,
+    socket: Arc<Mutex<CANSocket>>,
     pub bus: u8,
+    rx_queue: Arc<Mutex<Vec<CanMessage>>>,
 }
 
 impl CanNetwork for SocketCanNetwork {
@@ -14,22 +17,13 @@ impl CanNetwork for SocketCanNetwork {
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
         self.socket
+            .lock().unwrap()
             .write_frame(&frame)
             .expect("Failed to write can message");
     }
 
-    fn recv(&self) -> Option<CanMessage> {
-        match self.socket.read_frame() {
-            Ok(frame) => {
-                let msg = CanMessage {
-                    header: frame.id(),
-                    data: frame.data().to_vec(),
-                    bus: self.bus,
-                };
-                Some(msg)
-            }
-            _ => None,
-        }
+    fn recv(&self) -> Vec<CanMessage> {
+        self.rx_queue.lock().unwrap().drain(..).collect()
     }
 }
 
@@ -50,9 +44,40 @@ impl SocketCanNetwork {
             .set_read_timeout(time::Duration::from_millis(100))
             .expect("Failed to set socketcan read timeout");
         socket
-            .set_nonblocking(true)
-            .expect("Failed to set socketcan socket to nonblocking");
+            .set_nonblocking(false)
+            .expect("Failed to set socketcan socket to blocking");
+        socket
+            .set_read_timeout(std::time::Duration::from_millis(10))
+            .expect("Failed to set read timeout");
+        let socket = Arc::new(Mutex::new(socket));
+        let rx_socket = socket.clone();
 
-        SocketCanNetwork { socket, bus }
+        let rx_queue = Arc::new(Mutex::new(Vec::new()));
+        let queue = rx_queue.clone();
+
+        let _handle = thread::spawn(move || {
+            debug!("Starting rx thread for {}", bus_id);
+            loop {
+                let s = rx_socket.lock().unwrap();
+                match s.read_frame() {
+                    Ok(frame) => {
+                        let msg = CanMessage {
+                            header: frame.id(),
+                            data: frame.data().to_vec(),
+                            bus: bus,
+                        };
+                        trace!("RX: {:?}", msg);
+                        queue.lock().unwrap().push(msg);
+                    },
+                    _ => {
+                        // read_frame will return WouldBlock if there's no data available.  that
+                        // shuts down our thread if we .unwrap() it, so just do nothing and wait
+                        // for the next one
+                    },
+                }
+            }
+        });
+
+        SocketCanNetwork { socket, bus, rx_queue }
     }
 }

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 pub trait CanNetwork {
     fn send(&self, msg: CanMessage);
-    fn recv(&self) -> Option<CanMessage>;
+    fn recv(&self) -> Vec<CanMessage>;
 }
 
 #[cfg(feature = "async-tokio")]

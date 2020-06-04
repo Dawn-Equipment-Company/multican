@@ -40,3 +40,6 @@ pcan-basic-sys = "0.2.0"
 [dependencies.socket2]
 version = "0.3.8"
 features = ["reuseport"]
+
+[dev-dependencies]
+env_logger = "0.7.1"

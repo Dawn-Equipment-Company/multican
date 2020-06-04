@@ -17,8 +17,8 @@ impl CanNetwork for UdpNetwork {
         trace!("Sent {} bytes", sent);
     }
 
-    fn recv(&self) -> Option<CanMessage> {
-        let mut buf = [0u8; 64]; // receive buffer
+    fn recv(&self) -> Vec<CanMessage> {
+        /*let mut buf = [0u8; 64]; // receive buffer
 
         match self.socket.recv_from(&mut buf) {
             Ok((len, _remote_addr)) => {
@@ -28,7 +28,8 @@ impl CanNetwork for UdpNetwork {
                 Some(msg)
             }
             Err(_) => None,
-        }
+        }*/
+        Vec::new()
     }
 }
 

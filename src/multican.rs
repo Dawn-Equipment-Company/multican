@@ -33,10 +33,11 @@ impl MultiCan {
         let mut messages: Vec<CanMessage> = Vec::new();
 
         for (key, value) in &mut self.networks {
-            if let Some(mut m) = value.recv() {
+            messages.append(&mut value.recv());
+            /*if let Some(mut m) = value.recv() {
                 m.bus = *key;
                 messages.push(m);
-            }
+            }*/
         }
 
         messages
