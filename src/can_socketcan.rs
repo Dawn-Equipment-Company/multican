@@ -6,20 +6,15 @@ use std::sync::{Arc, Mutex};
 
 /// SocketCAN adapter for mulitcan
 pub struct SocketCanNetwork {
-    socket: Arc<Mutex<CANSocket>>,
     pub bus: u8,
     rx_queue: Arc<Mutex<Vec<CanMessage>>>,
+    tx_queue: Arc<Mutex<Vec<CanMessage>>>,
 }
 
 impl CanNetwork for SocketCanNetwork {
     fn send(&self, msg: CanMessage) {
         trace!("Sending {:?}", msg);
-        let frame = CANFrame::new(msg.header, &msg.data, false, false)
-            .expect("failed to convert can message to frame");
-        self.socket
-            .lock().unwrap()
-            .write_frame(&frame)
-            .expect("Failed to write can message");
+        self.tx_queue.lock().unwrap().push(msg);
     }
 
     fn recv(&self) -> Vec<CanMessage> {
@@ -29,7 +24,7 @@ impl CanNetwork for SocketCanNetwork {
 
 impl Drop for SocketCanNetwork {
     fn drop(&mut self) {
-        // is there anything to drop?
+        // probably want to end the thread here and drop the can socket
     }
 }
 
@@ -49,17 +44,25 @@ impl SocketCanNetwork {
         socket
             .set_read_timeout(std::time::Duration::from_millis(10))
             .expect("Failed to set read timeout");
-        let socket = Arc::new(Mutex::new(socket));
-        let rx_socket = socket.clone();
 
         let rx_queue = Arc::new(Mutex::new(Vec::new()));
         let queue = rx_queue.clone();
+        let tx_queue = Arc::new(Mutex::new(Vec::<CanMessage>::new()));
+        let tx = tx_queue.clone();
 
         let _handle = thread::spawn(move || {
             debug!("Starting rx thread for {}", bus_id);
             loop {
-                let s = rx_socket.lock().unwrap();
-                match s.read_frame() {
+                // wonder if the socket should be nonblocking so we don't wait to send
+                for msg in tx.lock().unwrap().drain(..) {
+                    let frame = CANFrame::new(msg.header, &msg.data, false, false)
+                        .expect("failed to convert can message to frame");
+                    socket
+                        .write_frame(&frame)
+                        .expect("Failed to write can message");
+                }
+
+                match socket.read_frame() {
                     Ok(frame) => {
                         let msg = CanMessage {
                             header: frame.id(),
@@ -78,6 +81,6 @@ impl SocketCanNetwork {
             }
         });
 
-        SocketCanNetwork { socket, bus, rx_queue }
+        SocketCanNetwork { bus, rx_queue, tx_queue }
     }
 }

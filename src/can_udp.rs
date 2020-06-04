@@ -18,18 +18,17 @@ impl CanNetwork for UdpNetwork {
     }
 
     fn recv(&self) -> Vec<CanMessage> {
-        /*let mut buf = [0u8; 64]; // receive buffer
+        let mut buf = [0u8; 64]; // receive buffer
 
         match self.socket.recv_from(&mut buf) {
             Ok((len, _remote_addr)) => {
                 let data = &buf[..len];
                 let msg = CanMessage::from_bytes(data);
                 trace!("RX {:?}", msg);
-                Some(msg)
+                vec![msg]
             }
-            Err(_) => None,
-        }*/
-        Vec::new()
+            Err(_) => Vec::new()
+        }
     }
 }
 
@@ -72,19 +71,3 @@ impl UdpNetwork {
     }
 }
 
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    //#[test]
-    fn it_works() {
-        let mut network = UdpNetwork::new(0);
-        network.send(CanMessage {
-            bus: 0,
-            header: 0x12345678,
-            data: vec![1, 2, 3],
-        });
-    }
-}
-*/

@@ -1,7 +1,7 @@
 extern crate multican;
 use multican::{CanConfig, CanBusType};
 
-// to see something, try cansend can2 123#4570
+// to see something, try cansend vcan0 123#4570
 
 fn main() {
     env_logger::init();
@@ -18,11 +18,6 @@ fn main() {
             id: 2,
             kind: CanBusType::SocketCan,
         },
-        // you can also mix network kinds
-        /*CanConfig {
-            id: 3,
-            kind: CanBusType::Udp,
-        },*/
     ];
     let mut network = multican::from_config(cfg);
     loop {

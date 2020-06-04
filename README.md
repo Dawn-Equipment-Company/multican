@@ -21,8 +21,7 @@ kind = "udp"
 ```rust
 // read the config file however you'd like
 let network_config = read_config("can.toml");
-let adapters = multican::setup_can(network_config);
-let network = MultiCan::new(adapters);
+let network = multican::from_config(network_config);
 
 // receive from all busses:
 for rx in network.recv() {

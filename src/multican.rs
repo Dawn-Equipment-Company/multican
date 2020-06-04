@@ -32,12 +32,8 @@ impl MultiCan {
     pub fn recv(&mut self) -> Vec<CanMessage> {
         let mut messages: Vec<CanMessage> = Vec::new();
 
-        for (key, value) in &mut self.networks {
+        for (_key, value) in &mut self.networks {
             messages.append(&mut value.recv());
-            /*if let Some(mut m) = value.recv() {
-                m.bus = *key;
-                messages.push(m);
-            }*/
         }
 
         messages
