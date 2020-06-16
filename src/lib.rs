@@ -7,21 +7,21 @@ extern crate pcan_basic_sys;
 #[cfg(unix)]
 extern crate socketcan;
 
+#[cfg(feature = "async-tokio")]
+pub mod async_can_udp;
+#[cfg(feature = "async-tokio")]
+pub mod async_multican;
+#[cfg(feature = "async-tokio")]
+pub mod async_socketcan;
 mod can_message;
 mod can_network;
 #[cfg(windows)]
 mod can_pcan;
 mod can_socketcan;
 mod can_udp;
-mod multican;
 #[cfg(feature = "async-tokio")]
 pub mod message_codec;
-#[cfg(feature = "async-tokio")]
-pub mod async_can_udp;
-#[cfg(feature = "async-tokio")]
-pub mod async_socketcan;
-#[cfg(feature = "async-tokio")]
-pub mod async_multican;
+mod multican;
 #[cfg(feature = "async-tokio")]
 mod tokio_socketcan;
 
@@ -34,15 +34,15 @@ pub use self::can_udp::UdpNetwork;
 pub use self::multican::MultiCan;
 
 #[cfg(feature = "async-tokio")]
-pub use self::message_codec::CanCodec;
-#[cfg(feature = "async-tokio")]
 pub use self::async_can_udp::AsyncUdpNetwork;
 #[cfg(feature = "async-tokio")]
-pub use self::can_network::AsyncCanNetwork;
+pub use self::async_multican::AsyncMultiCan;
 #[cfg(feature = "async-tokio")]
 pub use self::async_socketcan::AsyncSocketCanNetwork;
 #[cfg(feature = "async-tokio")]
-pub use self::async_multican::AsyncMultiCan;
+pub use self::can_network::AsyncCanNetwork;
+#[cfg(feature = "async-tokio")]
+pub use self::message_codec::CanCodec;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanConfig {
@@ -169,4 +169,3 @@ pub fn from_config_async(config: Vec<CanConfig>) -> AsyncMultiCan {
 
     mc
 }
-

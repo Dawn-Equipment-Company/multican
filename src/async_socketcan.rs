@@ -1,6 +1,7 @@
-use crate::{CanMessage, AsyncCanNetwork};
-use socketcan::CANFrame;
+use crate::{AsyncCanNetwork, CanMessage};
 use futures::stream::Stream;
+use socketcan::CANFrame;
+use tokio::stream::StreamExt;
 //use socketcan::CANSocket;
 use crate::tokio_socketcan::CANSocket;
 use async_trait::async_trait;
@@ -19,14 +20,12 @@ pub struct AsyncSocketCanNetwork {
 #[async_trait]
 impl AsyncCanNetwork for AsyncSocketCanNetwork {
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
-        trace!("Sending {:?}", msg);
+        println!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
-        self.socket
-            .write_frame(frame);
+        self.socket.write_frame(frame).unwrap().await;
         Ok(())
     }
-
 }
 
 /*impl Stream for AsyncSocketCanNetwork {
@@ -69,7 +68,10 @@ impl AsyncSocketCanNetwork {
             .set_nonblocking(true)
             .expect("Failed to set socketcan socket to nonblocking");*/
 
-        println!("opened {}", bus_id);
+        debug!("opened {}", bus_id);
+        //let s2 = CANSocket::open("can2").expect("failed to open can2");
+        //let mut x = socket.merge(s2);
+        //socket.split();
         AsyncSocketCanNetwork { socket, bus }
     }
 }

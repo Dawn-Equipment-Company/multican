@@ -1,13 +1,13 @@
 use crate::can_message::CanMessage;
+use bytes::{BufMut, BytesMut};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
-use bytes::{BytesMut, BufMut};
 
 pub struct CanCodec;
 
 impl CanCodec {
     pub fn new() -> Self {
-        CanCodec { }
+        CanCodec {}
     }
 }
 

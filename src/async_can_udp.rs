@@ -1,12 +1,12 @@
-use crate::{CanMessage, AsyncCanNetwork};
-use tokio::net::UdpSocket;
-use tokio_util::udp::UdpFramed;
-use futures::SinkExt;
-use std::net::SocketAddrV4;
+use crate::message_codec::CanCodec;
+use crate::{AsyncCanNetwork, CanMessage};
 use async_trait::async_trait;
+use futures::SinkExt;
 use std::error::Error;
 use std::net::SocketAddr;
-use crate::message_codec::CanCodec;
+use std::net::SocketAddrV4;
+use tokio::net::UdpSocket;
+use tokio_util::udp::UdpFramed;
 
 // lots of this came from:
 // https://github.com/henninglive/tokio-udp-multicast-chat/blob/master/src/main.rs
@@ -48,32 +48,27 @@ impl AsyncUdpNetwork {
 
         let socket = UdpFramed::new(socket, CanCodec::new());
 
-        AsyncUdpNetwork { socket, address: std::net::SocketAddr::V4(address) }
+        AsyncUdpNetwork {
+            socket,
+            address: std::net::SocketAddr::V4(address),
+        }
     }
 
     fn bind_multicast(
         addr: &SocketAddrV4,
         multi_addr: &SocketAddrV4,
-        ) -> Result<std::net::UdpSocket, Box<dyn Error>> {
-        use socket2::{Domain, Type, Protocol, Socket};
+    ) -> Result<std::net::UdpSocket, Box<dyn Error>> {
+        use socket2::{Domain, Protocol, Socket, Type};
 
         assert!(multi_addr.ip().is_multicast(), "Must be multcast address");
 
-        let socket = Socket::new(
-            Domain::ipv4(),
-            Type::dgram(),
-            Some(Protocol::udp()),
-            )?;
+        let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
 
         socket.set_reuse_address(true)?;
         socket.bind(&socket2::SockAddr::from(*addr))?;
         socket.set_multicast_loop_v4(true)?;
-        socket.join_multicast_v4(
-            multi_addr.ip(),
-            addr.ip(),
-            )?;
+        socket.join_multicast_v4(multi_addr.ip(), addr.ip())?;
 
         Ok(socket.into_udp_socket())
     }
 }
-

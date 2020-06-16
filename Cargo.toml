@@ -12,7 +12,7 @@ license = "MIT"
 [features]
 default = []
 # removing this feature for now while I get it to work so I can release the threaded version
-#async-tokio = ["tokio", "tokio-util", "futures", "bytes", "async-trait", "mio", "thiserror", "libc"]
+async-tokio = ["tokio", "tokio-util", "futures", "bytes", "async-trait", "mio", "thiserror", "libc"]
 
 [dependencies]
 log = "0.4"

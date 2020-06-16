@@ -1,9 +1,9 @@
 //use futures::stream::{Stream, StreamExt};
-use tokio::stream::StreamExt;
-use std::error::Error;
-use multican::{CanConfig, CanBusType};
 use multican::async_can_udp::AsyncUdpNetwork;
 use multican::async_socketcan::AsyncSocketCanNetwork;
+use multican::{CanBusType, CanConfig};
+use std::error::Error;
+use tokio::stream::StreamExt;
 use tokio::sync::mpsc;
 
 // lots of this code came from
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     tokio::join!(t0, t1);*/
     // end 'this works'
     // still want to merge the streams
-    /* 
+    /*
     tokio::spawn(async move {
         loop {
         while let Some(next) = n1.socket.next().await {
@@ -90,18 +90,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     //loop {
-        // this doesn't really work since it waits until both receive a value to move through the
-        // loop
-        /*if let Ok(m) = n0.socket.try_next().await {
-            println!("rx0: {:?}", m);
-        }
-        if let Ok(m) = n1.socket.try_next().await {
-            println!("rx1: {:?}", m);
-        }*/
+    // this doesn't really work since it waits until both receive a value to move through the
+    // loop
+    /*if let Ok(m) = n0.socket.try_next().await {
+        println!("rx0: {:?}", m);
+    }
+    if let Ok(m) = n1.socket.try_next().await {
+        println!("rx1: {:?}", m);
+    }*/
     //    while let Some(next) = n0.socket.next().await {
     //        println!("RX: {:?}", next);
     //    }
     //}
     Ok(())
 }
-

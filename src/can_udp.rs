@@ -27,7 +27,7 @@ impl CanNetwork for UdpNetwork {
                 trace!("RX {:?}", msg);
                 vec![msg]
             }
-            Err(_) => Vec::new()
+            Err(_) => Vec::new(),
         }
     }
 }
@@ -70,4 +70,3 @@ impl UdpNetwork {
         UdpNetwork { socket, address }
     }
 }
-

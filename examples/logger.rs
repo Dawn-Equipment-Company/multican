@@ -1,5 +1,5 @@
 extern crate multican;
-use multican::{CanConfig, CanBusType};
+use multican::{CanBusType, CanConfig};
 
 // to see something, try cansend vcan0 123#4570
 

@@ -1,8 +1,8 @@
 use crate::{CanMessage, CanNetwork};
 use socketcan::{CANFrame, CANSocket};
-use std::time;
-use std::thread;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time;
 
 /// SocketCAN adapter for mulitcan
 pub struct SocketCanNetwork {
@@ -71,16 +71,20 @@ impl SocketCanNetwork {
                         };
                         trace!("RX: {:?}", msg);
                         queue.lock().unwrap().push(msg);
-                    },
+                    }
                     _ => {
                         // read_frame will return WouldBlock if there's no data available.  that
                         // shuts down our thread if we .unwrap() it, so just do nothing and wait
                         // for the next one
-                    },
+                    }
                 }
             }
         });
 
-        SocketCanNetwork { bus, rx_queue, tx_queue }
+        SocketCanNetwork {
+            bus,
+            rx_queue,
+            tx_queue,
+        }
     }
 }
