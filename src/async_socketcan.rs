@@ -20,7 +20,7 @@ pub struct AsyncSocketCanNetwork {
 #[async_trait]
 impl AsyncCanNetwork for AsyncSocketCanNetwork {
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
-        println!("Sending {:?}", msg);
+        trace!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
         self.socket.write_frame(frame).unwrap().await;
