@@ -13,4 +13,6 @@ pub trait CanNetwork {
 #[async_trait]
 pub trait AsyncCanNetwork {
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error>;
+    async fn next(&self) -> Option<CanMessage>;
+    //fn stream(&self) -> futures::Stream<Item = CanMessage>;
 }

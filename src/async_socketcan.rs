@@ -1,15 +1,9 @@
 use crate::{AsyncCanNetwork, CanMessage};
-use futures::stream::Stream;
 use socketcan::CANFrame;
-use tokio::stream::StreamExt;
-//use socketcan::CANSocket;
+//use tokio::stream::StreamExt;
 use crate::tokio_socketcan::CANSocket;
 use async_trait::async_trait;
-use std::{io, time};
-//use tokio::stream::Stream;
-//use std::pin::Pin;
-//use std::task::Context;
-//use std::task::Poll;
+//use std::{io, time};
 
 /// SocketCAN adapter for mulitcan
 pub struct AsyncSocketCanNetwork {
@@ -23,8 +17,12 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
         trace!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
-        self.socket.write_frame(frame).unwrap().await;
+        self.socket.write_frame(frame).await;
         Ok(())
+    }
+
+    async fn next(&self) -> Option<CanMessage> {
+        None
     }
 }
 

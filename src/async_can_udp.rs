@@ -25,6 +25,10 @@ impl AsyncCanNetwork for AsyncUdpNetwork {
         trace!("Sending {:?}", msg);
         self.socket.send((msg, self.address)).await
     }
+
+    async fn next(&self) -> Option<CanMessage> {
+        None
+    }
 }
 
 impl Drop for AsyncUdpNetwork {
