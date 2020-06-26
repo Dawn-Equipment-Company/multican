@@ -28,7 +28,7 @@ impl<'a> AsyncMultiCan {
         match self.networks.entry(msg.bus) {
             Entry::Occupied(n) => {
                 trace!("TX: {:?}", msg);
-                n.into_mut().send(msg).await;
+                n.into_mut().send(msg).await.expect("Failed to send message");
             }
             Entry::Vacant(_) => warn!("AsyncMultiCan: missing adapter for bus {}", msg.bus),
         };
@@ -60,7 +60,7 @@ impl<'a> AsyncMultiCan {
     // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to
     // spawn a task for each bus since they're async, but oh well
     pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
-        let (mut tx, rx) = mpsc::channel(10);
+        let (tx, rx) = mpsc::channel(10);
         for (k, v) in self.networks.iter_mut() {
             let mut s = v.socket.clone();
             let num = k.clone();
