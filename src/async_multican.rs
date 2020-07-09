@@ -34,29 +34,6 @@ impl<'a> AsyncMultiCan {
         };
     }
 
-    // this works, but i don't know what bus the message came in on
-    /*pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
-        let (mut tx, rx) = mpsc::channel(10);
-        let mut sa = futures::stream::SelectAll::new();
-        for (_k, v) in self.networks.iter() {
-            sa.push(v.socket.clone());
-        }
-        let _ = tokio::spawn(async move {
-            while let Some(next) = sa.next().await {
-                if let Ok(frame) = next {
-                    println!("frame: {:?}", frame);
-                    let msg = CanMessage {
-                        header: frame.id(),
-                        data: frame.data().to_vec(),
-                        bus: 0,
-                    };
-                    tx.send(msg).await.unwrap();
-                }
-            }
-        });
-        rx
-    }*/
-
     // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to
     // spawn a task for each bus since they're async, but oh well
     pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
@@ -80,4 +57,23 @@ impl<'a> AsyncMultiCan {
         }
         rx
     }
+
+    /*pub fn stream2(&mut self) -> tokio::sync::mpsc::UnboundedReceiver<CanMessage> {
+        // foreach network,
+        //     spawn a listener task
+        //     pass in the tx
+        //  return the rx
+        //  -- spawning the listener task doesn't work here because it wants to clone the socket
+        //  which doesn't work for udb for some reason
+        //  and i can't spawn inside listener because of lifetime issues i don't understand
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        for (k, v) in self.networks.iter() {
+            let can_tx = tx.clone();
+            let n = v.clone();
+            let _ = tokio::spawn(async move {
+                n.listen(can_tx);
+            });
+        }
+        rx
+    }*/
 }

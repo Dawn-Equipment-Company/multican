@@ -26,9 +26,27 @@ impl AsyncCanNetwork for AsyncUdpNetwork {
         self.socket.send((msg, self.address)).await
     }
 
-    async fn next(&self) -> Option<CanMessage> {
-        None
-    }
+    /*async fn next(&self) -> futures::stream::Next<'_, CanMessage> {
+        self.socket.next()
+    }*/
+    /*async fn listen(&mut self, tx: tokio::sync::mpsc::UnboundedSender<CanMessage>) {
+//        tokio::spawn(async move {
+            println!("listening");
+            loop {
+                while let Some(next) = self.socket.next().await {
+                    if let Ok(frame) = next {
+                        let msg = CanMessage {
+                            header: 0x1234,
+                            data: vec![1, 2, 3, 4],
+                            bus: self.bus_number,
+                        };
+                        tx.send(msg);
+                    }
+                }
+
+            }
+//        });
+    }*/
 }
 
 impl Drop for AsyncUdpNetwork {

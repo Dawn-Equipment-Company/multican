@@ -101,7 +101,7 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        Box::new(SocketCanNetwork::new(net_config.id, "vcan")),
+                        Box::new(SocketCanNetwork::new(net_config.id, "vcan"),)
                     );
                 }
                 #[cfg(windows)]
@@ -120,7 +120,8 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
                 }
             }
             CanBusType::Udp => {
-                mc.add_adapter(net_config.id, Box::new(UdpNetwork::new(net_config.id)));
+                error!("UDP can adapter not supported");
+                //mc.add_adapter(net_config.id, Box::new(UdpNetwork::new(net_config.id)));
             }
         };
     }
@@ -162,7 +163,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 error!("PCAN adapter not implemented for async yet");
             }
             CanBusType::Udp => {
-                error!("can't figure this out right now");
+                //error!("can't figure this out right now");
                 //mc.add_adapter(net_config.id, Box::new(AsyncUdpNetwork::new(net_config.id)));
             }
         };

@@ -21,9 +21,14 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
         Ok(())
     }
 
-    async fn next(&self) -> Option<CanMessage> {
-        None
-    }
+    /*async fn next(&self) -> futures::stream::Next<'_, CanMessage> {
+        self.socket.next()
+    }*/
+    //async fn listen(&mut self, tx: tokio::sync::mpsc::UnboundedSender<CanMessage>) {
+//        tokio::spawn(async move {
+    //        println!("listening");
+//        });
+    //}
 }
 
 /*impl Stream for AsyncSocketCanNetwork {

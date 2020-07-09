@@ -7,11 +7,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cfg = vec![
         CanConfig {
             id: 0,
-            kind: CanBusType::VirtualSocketCan,
-        },
-        CanConfig {
-            id: 1,
-            kind: CanBusType::VirtualSocketCan,
+            kind: CanBusType::Udp,
         },
     ];
 
