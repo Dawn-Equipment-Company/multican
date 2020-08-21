@@ -24,14 +24,17 @@ impl<'a> AsyncMultiCan {
     }
 
     /// Sends a single CAN message on the bus specified by the message
-    pub async fn send(&mut self, msg: CanMessage) {
+    pub async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
         match self.networks.entry(msg.bus) {
             Entry::Occupied(n) => {
                 trace!("TX: {:?}", msg);
-                n.into_mut().send(msg).await.expect("Failed to send message");
+                n.into_mut().send(msg).await
             }
-            Entry::Vacant(_) => warn!("AsyncMultiCan: missing adapter for bus {}", msg.bus),
-        };
+            Entry::Vacant(_) => {
+                warn!("AsyncMultiCan: missing adapter for bus {}", msg.bus);
+                Err(std::io::Error::new(std::io::ErrorKind::NotConnected, "You tried to use an unconfigured bus id"))
+            }
+        }
     }
 
     // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to

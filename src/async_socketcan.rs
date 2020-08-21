@@ -17,8 +17,8 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
         trace!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
-        self.socket.write_frame(frame).await.expect("Failed to send message");
-        Ok(())
+        self.socket.write_frame(frame).await
+            //.expect("Failed to send message");
     }
 
     /*async fn next(&self) -> futures::stream::Next<'_, CanMessage> {
