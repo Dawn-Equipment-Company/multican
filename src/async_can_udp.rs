@@ -57,8 +57,9 @@ impl Drop for AsyncUdpNetwork {
 
 impl AsyncUdpNetwork {
     pub fn new(bus_number: u8) -> Self {
+        todo!("not implemented");
         //let multicast_group = Ipv4Addr::new(239, 0, 0, bus_number + 222);
-        let multicast_group = [239, 0, 0, bus_number + 222];
+        /*let multicast_group = [239, 0, 0, bus_number + 222];
 
         debug!("joining multicast group {:?}", multicast_group);
 
@@ -73,7 +74,7 @@ impl AsyncUdpNetwork {
         AsyncUdpNetwork {
             socket,
             address: std::net::SocketAddr::V4(address),
-        }
+        }*/
     }
 
     fn bind_multicast(

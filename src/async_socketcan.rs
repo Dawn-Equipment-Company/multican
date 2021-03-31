@@ -1,9 +1,9 @@
 use crate::{AsyncCanNetwork, CanMessage};
 use socketcan::CANFrame;
 //use tokio::stream::StreamExt;
-use crate::tokio_socketcan::CANSocket;
+//use crate::tokio_socketcan::CANSocket;
+use tokio_socketcan::CANSocket;
 use async_trait::async_trait;
-//use std::{io, time};
 
 /// SocketCAN adapter for mulitcan
 pub struct AsyncSocketCanNetwork {
@@ -13,12 +13,19 @@ pub struct AsyncSocketCanNetwork {
 
 #[async_trait]
 impl AsyncCanNetwork for AsyncSocketCanNetwork {
+    //async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
         trace!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
-        self.socket.write_frame(frame).await
-            //.expect("Failed to send message");
+        //self.socket.write_frame(frame).await
+        match self.socket.write_frame(frame).unwrap().await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                println!("error: {:?}", e);
+                Err(std::io::Error::new(std::io::ErrorKind::Other, "no"))
+            }
+        }
     }
 
     /*async fn next(&self) -> futures::stream::Next<'_, CanMessage> {
@@ -75,6 +82,7 @@ impl AsyncSocketCanNetwork {
         //let s2 = CANSocket::open("can2").expect("failed to open can2");
         //let mut x = socket.merge(s2);
         //socket.split();
-        AsyncSocketCanNetwork { socket, bus }
+        //AsyncSocketCanNetwork { socket: Arc::new(Mutex::new(socket)), bus }
+        AsyncSocketCanNetwork { socket: socket, bus }
     }
 }

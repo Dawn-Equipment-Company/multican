@@ -3,12 +3,15 @@ use crate::can_message::CanMessage;
 use crate::can_network::AsyncCanNetwork;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use tokio::stream::StreamExt;
+use futures::StreamExt;
+//use tokio::stream::StreamExt;
 use tokio::sync::mpsc;
 
 pub struct AsyncMultiCan {
     //networks: HashMap<u8, Box<dyn AsyncCanNetwork + Send + 'static>>,
     networks: HashMap<u8, AsyncSocketCanNetwork>,
+    //networks: HashMap<u8, Arc<Mutex<AsyncSocketCanNetwork>>>,
+    //networks: HashMap<u8, Arc<Mutex<AsyncSocketCanNetwork>>>,
 }
 
 impl<'a> AsyncMultiCan {
@@ -20,6 +23,7 @@ impl<'a> AsyncMultiCan {
 
     //pub fn add_adapter(&mut self, id: u8, adapter: Box<dyn AsyncCanNetwork + Send + 'static>) {
     pub fn add_adapter(&mut self, id: u8, adapter: AsyncSocketCanNetwork) {
+        //jself.networks.insert(id, Arc::new(Mutex::new(adapter)));
         self.networks.insert(id, adapter);
     }
 
@@ -29,6 +33,7 @@ impl<'a> AsyncMultiCan {
             Entry::Occupied(n) => {
                 trace!("TX: {:?}", msg);
                 n.into_mut().send(msg).await
+                //n.into_mut().lock().unwrap().send(msg).await
             }
             Entry::Vacant(_) => {
                 warn!("AsyncMultiCan: missing adapter for bus {}", msg.bus);
@@ -41,10 +46,17 @@ impl<'a> AsyncMultiCan {
     // spawn a task for each bus since they're async, but oh well
     pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
         let (tx, rx) = mpsc::channel(10);
+        /*tokio::spawn(async move {
+        tokio::select! {
+            m = self.networks.get_mut(&1).unwrap().socket.next() => {
+                println!("m: {:?}", m);
+            }
+        }
+        });*/
         for (k, v) in self.networks.iter_mut() {
             let mut s = v.socket.clone();
             let num = k.clone();
-            let mut t = tx.clone();
+            let t = tx.clone();
             let _ = tokio::spawn(async move {
                 while let Some(next) = s.next().await {
                     if let Ok(frame) = next {
@@ -58,6 +70,24 @@ impl<'a> AsyncMultiCan {
                 }
             });
         }
+        //tokio::spawn(async move {
+        /*let n1 = self.networks.get(&1).unwrap().clone();
+        tokio::spawn(async move  {
+            let n1 = n1.lock().unwrap();
+            println!("rx bus {}", n1.bus);
+            let s = n1.socket.lock().unwrap();
+            while let Some(test) = s.next().await {
+                println!("test");
+            }*/
+            /*let n = n1.lock().unwrap();
+            while let Some(text) = n.socket.next().await {
+                println!("a");
+            }*/
+            //let s = n1 as AsyncSocketCanNetwork;
+            //let r = n.socket.next().await;
+            //println!("{:?}", r);
+        //    println!("x");
+        //});
         rx
     }
 
@@ -67,7 +97,7 @@ impl<'a> AsyncMultiCan {
         //     pass in the tx
         //  return the rx
         //  -- spawning the listener task doesn't work here because it wants to clone the socket
-        //  which doesn't work for udb for some reason
+        //  which doesn't work for udp for some reason
         //  and i can't spawn inside listener because of lifetime issues i don't understand
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
         for (k, v) in self.networks.iter() {
