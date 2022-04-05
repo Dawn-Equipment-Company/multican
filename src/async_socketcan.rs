@@ -1,9 +1,13 @@
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
+
 use crate::{AsyncCanNetwork, CanMessage};
-use socketcan::CANFrame;
-//use tokio::stream::StreamExt;
-use crate::tokio_socketcan::CANSocket;
 use async_trait::async_trait;
-//use std::{io, time};
+use futures::{Stream, StreamExt};
+use socketcan::CANFrame;
+use tokio_socketcan::CANSocket;
 
 /// SocketCAN adapter for mulitcan
 pub struct AsyncSocketCanNetwork {
@@ -17,38 +21,40 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
         trace!("Sending {:?}", msg);
         let frame = CANFrame::new(msg.header, &msg.data, false, false)
             .expect("failed to convert can message to frame");
-        self.socket.write_frame(frame).await;
+        self.socket.write_frame(frame).unwrap();
         Ok(())
     }
 
-    async fn next(&self) -> Option<CanMessage> {
-        None
+    async fn next(&mut self) -> Option<CanMessage> {
+        if let Some(Ok(frame)) = self.socket.next().await {
+            Some(CanMessage {
+                header: frame.id(),
+                data: frame.data().to_owned(),
+                bus: self.bus,
+            })
+        } else {
+            None
+        }
     }
 }
 
-/*impl Stream for AsyncSocketCanNetwork {
+impl Stream for AsyncSocketCanNetwork {
     type Item = CanMessage;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         println!("poll_next");
-        match self.socket.read_frame() {
-            Ok(frame) => {
+        match self.socket.poll_next_unpin(cx) {
+            Poll::Ready(Some(Ok(frame))) => {
                 println!("got frame");
-                let msg = CanMessage {
+                Poll::Ready(Some(CanMessage {
                     header: frame.id(),
                     data: frame.data().to_vec(),
                     bus: self.bus,
-                };
-                Poll::Ready(Some(msg))
-            },
+                }))
+            }
+            Poll::Ready(Some(Err(_e))) => Poll::Ready(None),
             _ => Poll::Pending,
         }
-    }
-}*/
-
-impl Drop for AsyncSocketCanNetwork {
-    fn drop(&mut self) {
-        // is there anything to drop?
     }
 }
 

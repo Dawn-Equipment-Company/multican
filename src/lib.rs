@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
 #[cfg(windows)]
 extern crate pcan_basic_sys;
 #[cfg(unix)]
 extern crate socketcan;
+
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "async-tokio")]
 pub mod async_can_udp;
@@ -22,8 +22,6 @@ mod can_udp;
 #[cfg(feature = "async-tokio")]
 pub mod message_codec;
 mod multican;
-#[cfg(feature = "async-tokio")]
-mod tokio_socketcan;
 
 pub use self::can_message::CanMessage;
 pub use self::can_network::CanNetwork;
@@ -129,6 +127,10 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
 
 #[cfg(feature = "async-tokio")]
 pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
+    use std::sync::Arc;
+
+    use tokio::sync::Mutex;
+
     let mut mc = AsyncMultiCan::new();
     for net_config in config {
         match net_config.kind {
@@ -137,7 +139,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        AsyncSocketCanNetwork::new(net_config.id, "can"),
+                        Arc::new(Mutex::new(AsyncSocketCanNetwork::new(net_config.id, "can"))),
                     );
                 }
                 #[cfg(windows)]
@@ -150,7 +152,10 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        AsyncSocketCanNetwork::new(net_config.id, "vcan"),
+                        Arc::new(Mutex::new(AsyncSocketCanNetwork::new(
+                            net_config.id,
+                            "vcan",
+                        ))),
                     );
                 }
                 #[cfg(windows)]

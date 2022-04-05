@@ -1,7 +1,7 @@
 use crate::message_codec::CanCodec;
 use crate::{AsyncCanNetwork, CanMessage};
 use async_trait::async_trait;
-use futures::SinkExt;
+use futures::{SinkExt, StreamExt};
 use std::error::Error;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
@@ -26,8 +26,16 @@ impl AsyncCanNetwork for AsyncUdpNetwork {
         self.socket.send((msg, self.address)).await
     }
 
-    async fn next(&self) -> Option<CanMessage> {
-        None
+    async fn next(&mut self) -> Option<CanMessage> {
+        if let Some(Ok((frame, _addr))) = self.socket.next().await {
+            Some(CanMessage {
+                header: frame.header,
+                data: frame.data,
+                bus: todo!("does udp have a bus id?"),
+            })
+        } else {
+            None
+        }
     }
 }
 
