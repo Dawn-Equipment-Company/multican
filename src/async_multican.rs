@@ -60,7 +60,7 @@ impl<'a> AsyncMultiCan {
 
     // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to
     // spawn a task for each bus since they're async, but oh well
-    pub async fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
+    pub async fn stream(&mut self) -> tokio_stream::wrappers::ReceiverStream<CanMessage> {
         let (tx, rx) = mpsc::channel(10);
 
         for network in self.networks.values_mut() {
@@ -74,6 +74,6 @@ impl<'a> AsyncMultiCan {
             });
         }
 
-        rx
+        tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 }
