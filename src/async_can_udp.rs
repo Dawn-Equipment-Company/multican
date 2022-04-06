@@ -17,6 +17,7 @@ const IP_ALL: [u8; 4] = [0, 0, 0, 0];
 pub struct AsyncUdpNetwork {
     pub socket: UdpFramed<CanCodec>,
     address: SocketAddr,
+    bus: u8,
 }
 
 #[async_trait]
@@ -31,7 +32,7 @@ impl AsyncCanNetwork for AsyncUdpNetwork {
             Some(CanMessage {
                 header: frame.header,
                 data: frame.data,
-                bus: todo!("does udp have a bus id?"),
+                bus: self.bus,
             })
         } else {
             None
@@ -63,6 +64,7 @@ impl AsyncUdpNetwork {
         AsyncUdpNetwork {
             socket,
             address: std::net::SocketAddr::V4(address),
+            bus: bus_number,
         }
     }
 
