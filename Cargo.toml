@@ -17,9 +17,6 @@ async-tokio = ["tokio", "tokio-stream", "tokio-util", "futures", "bytes", "async
 [dependencies]
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-# had to specify the build number here or cargo can't resolve dependencies
-# serde_derive = "1.0.136"
-
 
 tokio = { version = "1.17.0", features = ["full"], optional = true }
 tokio-stream = {version = "0.1.8", optional = true }
@@ -39,8 +36,8 @@ socketcan = "1.7.0"
 pcan-basic-sys = "0.2.0"
 
 [dependencies.socket2]
-version = "0.3.8"
-features = ["reuseport"]
+version = "0.4.4"
+features = ["all"]
 
 [dev-dependencies]
-env_logger = "0.7.1"
+env_logger = "0.9.0"

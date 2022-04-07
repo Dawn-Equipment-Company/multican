@@ -28,15 +28,15 @@ pub use self::can_network::CanNetwork;
 #[cfg(windows)]
 pub use self::can_pcan::PcanNetwork;
 pub use self::can_socketcan::SocketCanNetwork;
-pub use self::can_udp::UdpNetwork;
+// pub use self::can_udp::UdpNetwork;
 pub use self::multican::MultiCan;
 
 #[cfg(feature = "async-tokio")]
 pub use self::async_can_udp::AsyncUdpNetwork;
 #[cfg(feature = "async-tokio")]
 pub use self::async_multican::AsyncMultiCan;
-#[cfg(feature = "async-tokio")]
-pub use self::async_socketcan::AsyncSocketCanNetwork;
+// #[cfg(feature = "async-tokio")]
+// pub use self::async_socketcan::AsyncSocketCanNetwork;
 #[cfg(feature = "async-tokio")]
 pub use self::can_network::AsyncCanNetwork;
 #[cfg(feature = "async-tokio")]
@@ -118,7 +118,8 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
                 }
             }
             CanBusType::Udp => {
-                mc.add_adapter(net_config.id, Box::new(UdpNetwork::new(net_config.id)));
+                // mc.add_adapter(net_config.id, Box::new(UdpNetwork::new(net_config.id)));
+                todo!()
             }
         };
     }
@@ -126,10 +127,10 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
 }
 
 #[cfg(feature = "async-tokio")]
-pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
+pub fn from_config_async(config: Vec<CanConfig>) -> AsyncMultiCan {
     use std::sync::Arc;
 
-    use tokio::sync::Mutex;
+    use crate::async_socketcan::AsyncSocketCanNetwork;
 
     let mut mc = AsyncMultiCan::new();
     for net_config in config {
@@ -139,7 +140,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        Arc::new(Mutex::new(AsyncSocketCanNetwork::new(net_config.id, "can"))),
+                        Arc::new(AsyncSocketCanNetwork::new(net_config.id, "can")),
                     );
                 }
                 #[cfg(windows)]
@@ -152,10 +153,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        Arc::new(Mutex::new(AsyncSocketCanNetwork::new(
-                            net_config.id,
-                            "vcan",
-                        ))),
+                        Arc::new(AsyncSocketCanNetwork::new(net_config.id, "vcan")),
                     );
                 }
                 #[cfg(windows)]
@@ -167,8 +165,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 error!("PCAN adapter not implemented for async yet");
             }
             CanBusType::Udp => {
-                error!("can't figure this out right now");
-                //mc.add_adapter(net_config.id, Box::new(AsyncUdpNetwork::new(net_config.id)));
+                mc.add_adapter(net_config.id, Arc::new(AsyncUdpNetwork::new(net_config.id)));
             }
         };
     }
