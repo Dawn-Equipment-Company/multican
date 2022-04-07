@@ -1,7 +1,6 @@
 use futures::StreamExt;
 use multican::{CanBusType, CanConfig, CanMessage};
 use std::error::Error;
-use tokio::time::interval;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -29,15 +28,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         while let Some(msg) = can_stream.next().await {
             println!("2");
-            println!("RX: {:?}", msg);
+            println!("RECEIVED: {:?}", msg);
         }
     });
 
     let sender = tokio::spawn(async move {
-        loop {
-            // tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        // let mut counter = 0;
 
-            println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        while true {
+            // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+
+            // println!("{} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>", counter);
 
             network
                 .send(CanMessage {
@@ -47,7 +48,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 })
                 .await;
 
-            println!("sent");
+            // println!("{} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<", counter);
+
+            // counter += 1;
         }
     });
 

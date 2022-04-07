@@ -44,8 +44,9 @@ impl AsyncUdpNetwork {
         let socket = UdpFramed::new(socket, CanCodec::new());
         let (socket_tx, socket_rx) = socket.split();
 
-        let (send_tx, send_rx) = tokio::sync::mpsc::channel(32);
-        let (next_tx, next_rx) = tokio::sync::mpsc::channel(32);
+        // COMMAND CHANNELS
+        let (send_tx, send_rx) = tokio::sync::mpsc::channel(10);
+        let (next_tx, next_rx) = tokio::sync::mpsc::channel(10);
 
         let inner = AsyncUdpNetworkImpl {
             socket_tx,
@@ -73,6 +74,13 @@ impl AsyncUdpNetwork {
         socket.bind(&socket2::SockAddr::from(*addr))?;
         socket.set_multicast_loop_v4(true)?;
         socket.join_multicast_v4(multi_addr.ip(), addr.ip())?;
+        // socket.set_nonblocking(true)?;
+        dbg!(socket.recv_buffer_size().unwrap());
+        dbg!(socket.send_buffer_size().unwrap());
+        // socket.set_send_buffer_size(1).unwrap();
+        // socket.set_recv_buffer_size(1).unwrap();
+        // dbg!(socket.recv_buffer_size());
+        // dbg!(socket.send_buffer_size());
 
         Ok(std::net::UdpSocket::from(socket))
     }
@@ -80,8 +88,8 @@ impl AsyncUdpNetwork {
 
 fn handle_messages(
     mut inner: AsyncUdpNetworkImpl,
-    mut send_rx: Receiver<Send>,
-    mut next_rx: Receiver<Next>,
+    mut send_rx: Receiver<Send>, // sending to a socket
+    mut next_rx: Receiver<Next>, // nexting from a socket
 ) {
     tokio::spawn(async move {
         loop {
@@ -113,35 +121,49 @@ fn handle_messages(
 #[async_trait]
 impl AsyncCanNetwork for AsyncUdpNetwork {
     async fn send(&self, msg: CanMessage) -> Result<(), std::io::Error> {
-        let res = self
-            .send_tx
-            .send(Send(msg))
-            .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e));
+        let send_tx = self.send_tx.clone();
+        let res = tokio::spawn(async move {
+            send_tx
+                .send(Send(msg))
+                .await
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
+        });
+        // .await
+        // .unwrap();
 
         println!("managed to send to inner");
 
-        res
+        // res
+
+        Ok(())
     }
 
     async fn next(&self) -> Option<CanMessage> {
         let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
 
-        self.next_tx
-            .send(Next(reply_tx))
-            .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
-            .unwrap();
+        let next_tx = self.next_tx.clone();
 
-        println!("sent Next(reply_tx) to inner");
+        tokio::spawn(async move {
+            next_tx
+                .send(Next(reply_tx))
+                .await
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
+                .unwrap();
 
-        if let Ok(m) = reply_rx.await {
-            println!("some");
-            Some(m)
-        } else {
-            println!("NOne");
-            None
-        }
+            println!("sent Next(reply_tx) to inner");
+        });
+
+        let result = tokio::spawn(async move {
+            if let Ok(m) = reply_rx.await {
+                println!("some");
+                Some(m)
+            } else {
+                println!("NOne");
+                None
+            }
+        });
+
+        result.await.unwrap()
     }
 }
 
@@ -153,11 +175,16 @@ struct AsyncUdpNetworkImpl {
     bus: u8,
 }
 
-// #[async_trait]
 impl AsyncUdpNetworkImpl {
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
-        println!("SENDING {:?}", msg);
-        self.socket_tx.send((msg, self.address)).await.unwrap();
+        println!("INNER SENDING {:?} TO SOCKET", &msg);
+
+        self.socket_tx
+            .send((msg.clone(), self.address))
+            .await
+            .unwrap();
+
+        println!("SOCKET_TX WAS SENT {:?}", msg);
         Ok(())
     }
 

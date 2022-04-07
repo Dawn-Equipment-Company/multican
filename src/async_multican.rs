@@ -26,7 +26,10 @@ impl<'a> AsyncMultiCan {
             println!("got network");
             println!("async multican send");
             trace!("TX: {:?}", msg);
-            network.send(msg).await.expect("unable to send");
+            let network = network.clone();
+            tokio::spawn(async move {
+                network.send(msg).await.expect("unable to send");
+            });
             println!("after network.send(msg)");
         } else {
             warn!("AsyncMultiCan: missing adapter for bus {}", msg.bus)
@@ -59,9 +62,12 @@ impl<'a> AsyncMultiCan {
     // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to
     // spawn a task for each bus since they're async, but oh well
     pub async fn stream(&mut self) -> tokio_stream::wrappers::ReceiverStream<CanMessage> {
-        let (tx, rx) = mpsc::channel(1);
+        let (tx, rx) = mpsc::channel(10);
 
-        for network in self.networks.values_mut() {
+        // let networks = self.networks.clone();
+
+        // tokio::spawn(async move {
+        for network in self.networks.values() {
             let t = tx.clone();
             let network = network.clone();
 
@@ -74,6 +80,7 @@ impl<'a> AsyncMultiCan {
                 }
             });
         }
+        // });
 
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
