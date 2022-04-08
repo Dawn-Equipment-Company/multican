@@ -1,3 +1,5 @@
+use tracing::warn;
+
 use crate::can_message::CanMessage;
 use crate::can_network::CanNetwork;
 use std::collections::hash_map::Entry;

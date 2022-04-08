@@ -2,7 +2,9 @@ use crate::can_message::CanMessage;
 use bytes::{BufMut, BytesMut};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
+use tracing::trace;
 
+#[derive(Debug)]
 pub struct CanCodec;
 
 impl CanCodec {

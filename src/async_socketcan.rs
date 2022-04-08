@@ -4,6 +4,7 @@ use futures::{stream::SplitSink, stream::SplitStream, SinkExt, StreamExt};
 use socketcan::CANFrame;
 use tokio::sync::mpsc::Sender;
 use tokio_socketcan::CANSocket;
+use tracing::{debug, trace};
 
 #[derive(Debug)]
 struct Send(CanMessage);
@@ -11,7 +12,7 @@ struct Send(CanMessage);
 #[derive(Debug)]
 struct Next(tokio::sync::oneshot::Sender<CanMessage>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AsyncSocketCanNetwork {
     send_tx: Sender<Send>,
     next_tx: Sender<Next>,

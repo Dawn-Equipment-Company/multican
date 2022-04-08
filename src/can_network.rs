@@ -11,7 +11,7 @@ pub trait CanNetwork {
 
 #[cfg(feature = "async-tokio")]
 #[async_trait]
-pub trait AsyncCanNetwork: Send + Sync {
+pub trait AsyncCanNetwork: std::fmt::Debug + Send + Sync {
     async fn send(&self, msg: CanMessage) -> Result<(), std::io::Error>;
     async fn next(&self) -> Option<CanMessage>;
     // fn stream(&self) -> futures::Stream<Item = CanMessage>;

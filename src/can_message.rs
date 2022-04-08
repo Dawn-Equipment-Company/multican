@@ -1,5 +1,7 @@
 use std::fmt;
 
+use tracing::error;
+
 #[derive(Clone)]
 pub struct CanMessage {
     /// 29 bit CAN header

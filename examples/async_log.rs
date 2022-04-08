@@ -1,43 +1,45 @@
 use futures::StreamExt;
 use multican::{CanBusType, CanConfig, CanMessage};
 use std::error::Error;
+use tracing::{debug, info, Instrument};
+use tracing_subscriber::prelude::*;
 
 #[tokio::main]
+#[tracing::instrument]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let cfg = vec![
-        CanConfig {
-            id: 1,
-            kind: CanBusType::Udp,
-        },
-        // CanConfig {
-        //     id: 3,
-        //     kind: CanBusType::Udp,
-        // },
-        // CanConfig {
-        //     id: 0,
-        //     kind: CanBusType::VirtualSocketCan,
-        // },
-    ];
+    tracing_subscriber::fmt::init();
+    // enable this to log to the console:
+    //
+    // console_subscriber::init();
+
+    // enable these to send traces to a running jaeger server:
+    //
+    // let tracer = opentelemetry_jaeger::new_pipeline()
+    //     .with_service_name("async_log")
+    //     .install_simple()?;
+    // let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    // tracing_subscriber::registry()
+    //     .with(opentelemetry)
+    //     .try_init()?;
+
+    let root = tracing::span!(tracing::Level::TRACE, "lifecycle");
+    let _enter = root.enter();
+
+    let cfg = vec![CanConfig {
+        id: 1,
+        kind: CanBusType::Udp,
+    }];
 
     let mut network = multican::from_config_async(cfg);
     let mut can_stream = network.stream().await;
-    println!("can stream returned");
-
-    let t = tokio::spawn(async move {
-        println!("1");
-
-        while let Some(msg) = can_stream.next().await {
-            println!("2");
-            println!("RECEIVED: {:?}", msg);
-        }
-    });
 
     let sender = tokio::spawn(async move {
-        // let mut counter = 0;
+        let mut counter = 0;
 
-        while true {
-            // tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        // while counter < 30 {
 
+        loop {
+            // tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             // println!("{} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>", counter);
 
             network
@@ -50,7 +52,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             // println!("{} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<", counter);
 
-            // counter += 1;
+            counter += 1;
+
+            if counter % 1000 == 0 {
+                println!("SENT: {}", counter);
+            }
+
+            if counter >= 100_000 {
+                return;
+            }
+        }
+    });
+
+    let t = tokio::spawn(async move {
+        let mut counter = 0;
+
+        while let Some(msg) = can_stream.next().await {
+            // debug!("XXXXX RECEIVED {:?}", msg);
+
+            counter += 1;
+
+            if counter % 1000 == 0 {
+                println!("RECEIVED: {}", counter);
+            }
         }
     });
 

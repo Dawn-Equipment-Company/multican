@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate log;
 #[cfg(windows)]
 extern crate pcan_basic_sys;
 #[cfg(unix)]
@@ -129,6 +127,8 @@ pub fn from_config(config: Vec<CanConfig>) -> MultiCan {
 #[cfg(feature = "async-tokio")]
 pub fn from_config_async(config: Vec<CanConfig>) -> AsyncMultiCan {
     use std::sync::Arc;
+
+    use tracing::error;
 
     use crate::async_socketcan::AsyncSocketCanNetwork;
 

@@ -6,9 +6,12 @@ use futures::{SinkExt, StreamExt};
 use std::error::Error;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
+use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::Mutex;
 use tokio_util::udp::UdpFramed;
+use tracing::{debug, error};
 
 // lots of this came from:
 // https://github.com/henninglive/tokio-udp-multicast-chat/blob/master/src/main.rs
@@ -22,15 +25,20 @@ struct Send(CanMessage);
 #[derive(Debug)]
 struct Next(tokio::sync::oneshot::Sender<CanMessage>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AsyncUdpNetwork {
     send_tx: Sender<Send>,
     next_tx: Sender<Next>,
 }
 
 impl AsyncUdpNetwork {
+    #[tracing::instrument]
     pub fn new(bus_number: u8) -> Self {
         //let multicast_group = Ipv4Addr::new(239, 0, 0, bus_number + 222);
+
+        let (send_tx, send_rx) = tokio::sync::mpsc::channel(32);
+        let (next_tx, next_rx) = tokio::sync::mpsc::channel(32);
+
         let multicast_group = [239, 0, 0, bus_number + 222];
 
         debug!("joining multicast group {:?}", multicast_group);
@@ -38,19 +46,19 @@ impl AsyncUdpNetwork {
         let address = SocketAddrV4::new(IP_ALL.into(), DEFAULT_PORT);
         let multi_addr = SocketAddrV4::new(multicast_group.into(), DEFAULT_PORT);
 
-        let std_socket = AsyncUdpNetwork::bind_multicast(&address, &multi_addr).unwrap();
-        let socket = UdpSocket::from_std(std_socket).unwrap();
+        let std_socket: std::net::UdpSocket =
+            AsyncUdpNetwork::bind_multicast(&address, &multi_addr).unwrap();
+
+        let socket: tokio::net::UdpSocket = UdpSocket::from_std(std_socket).unwrap();
 
         let socket = UdpFramed::new(socket, CanCodec::new());
         let (socket_tx, socket_rx) = socket.split();
 
         // COMMAND CHANNELS
-        let (send_tx, send_rx) = tokio::sync::mpsc::channel(10);
-        let (next_tx, next_rx) = tokio::sync::mpsc::channel(10);
 
         let inner = AsyncUdpNetworkImpl {
-            socket_tx,
-            socket_rx,
+            socket_tx: Arc::new(Mutex::new(socket_tx)),
+            socket_rx: Arc::new(Mutex::new(socket_rx)),
             address: std::net::SocketAddr::V4(address),
             bus: bus_number,
         };
@@ -60,6 +68,7 @@ impl AsyncUdpNetwork {
         Self { send_tx, next_tx }
     }
 
+    #[tracing::instrument]
     fn bind_multicast(
         addr: &SocketAddrV4,
         multi_addr: &SocketAddrV4,
@@ -70,22 +79,18 @@ impl AsyncUdpNetwork {
 
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
-        socket.set_reuse_address(true)?;
         socket.bind(&socket2::SockAddr::from(*addr))?;
-        socket.set_multicast_loop_v4(true)?;
-        socket.join_multicast_v4(multi_addr.ip(), addr.ip())?;
         // socket.set_nonblocking(true)?;
-        dbg!(socket.recv_buffer_size().unwrap());
-        dbg!(socket.send_buffer_size().unwrap());
-        // socket.set_send_buffer_size(1).unwrap();
-        // socket.set_recv_buffer_size(1).unwrap();
-        // dbg!(socket.recv_buffer_size());
-        // dbg!(socket.send_buffer_size());
+        socket.set_multicast_loop_v4(true)?;
+        socket.set_reuse_address(true)?;
+        socket.set_reuse_port(true)?;
+        socket.join_multicast_v4(multi_addr.ip(), addr.ip())?;
 
         Ok(std::net::UdpSocket::from(socket))
     }
 }
 
+#[tracing::instrument(skip(inner))]
 fn handle_messages(
     mut inner: AsyncUdpNetworkImpl,
     mut send_rx: Receiver<Send>, // sending to a socket
@@ -93,25 +98,12 @@ fn handle_messages(
 ) {
     tokio::spawn(async move {
         loop {
-            println!("loop start");
-
             tokio::select! {
-                Some(Send(m)) = send_rx.recv() => {
-                    println!("SEND COMMAND received");
-                    inner.send(m).await.unwrap()
+                Some(Send(message)) = send_rx.recv() => {
+                    inner.send(message).await.unwrap()
                 }
                 Some(Next(reply_tx)) = next_rx.recv() => {
-                    println!("received request for next");
-                    if let Some(m) = inner.next().await {
-                        println!("next inner replied");
-                        reply_tx.send(m).unwrap();
-                        println!("next replied");
-                    } else  {
-                        println!("next got NONe");
-                    }
-                }
-                else => {
-                    println!("else");
+                    inner.next(reply_tx).await;
                 }
             }
         }
@@ -120,24 +112,15 @@ fn handle_messages(
 
 #[async_trait]
 impl AsyncCanNetwork for AsyncUdpNetwork {
+    #[tracing::instrument]
     async fn send(&self, msg: CanMessage) -> Result<(), std::io::Error> {
-        let send_tx = self.send_tx.clone();
-        let res = tokio::spawn(async move {
-            send_tx
-                .send(Send(msg))
-                .await
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
-        });
-        // .await
-        // .unwrap();
-
-        println!("managed to send to inner");
-
-        // res
-
-        Ok(())
+        self.send_tx
+            .send(Send(msg))
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn next(&self) -> Option<CanMessage> {
         let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
 
@@ -149,64 +132,57 @@ impl AsyncCanNetwork for AsyncUdpNetwork {
                 .await
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e))
                 .unwrap();
-
-            println!("sent Next(reply_tx) to inner");
         });
 
-        let result = tokio::spawn(async move {
-            if let Ok(m) = reply_rx.await {
-                println!("some");
-                Some(m)
-            } else {
-                println!("NOne");
+        match tokio::spawn(reply_rx).await.unwrap() {
+            Ok(m) => Some(m),
+            Err(e) => {
+                error!("{:?}", e);
                 None
             }
-        });
-
-        result.await.unwrap()
+        }
     }
 }
 
+#[derive(Debug)]
 struct AsyncUdpNetworkImpl {
-    // pub socket: UdpFramed<CanCodec>,
-    socket_tx: SplitSink<UdpFramed<CanCodec>, (CanMessage, SocketAddr)>,
-    socket_rx: SplitStream<UdpFramed<CanCodec>>,
+    socket_tx: Arc<Mutex<SplitSink<UdpFramed<CanCodec>, (CanMessage, SocketAddr)>>>,
+    socket_rx: Arc<Mutex<SplitStream<UdpFramed<CanCodec>>>>,
     address: SocketAddr,
     bus: u8,
 }
 
 impl AsyncUdpNetworkImpl {
+    #[tracing::instrument(skip(self))]
     async fn send(&mut self, msg: CanMessage) -> Result<(), std::io::Error> {
-        println!("INNER SENDING {:?} TO SOCKET", &msg);
+        let socket_tx = self.socket_tx.clone();
+        let address = self.address;
 
-        self.socket_tx
-            .send((msg.clone(), self.address))
-            .await
-            .unwrap();
+        tokio::spawn(async move {
+            let mut socket_tx = socket_tx.lock().await;
+            socket_tx.send((msg.clone(), address)).await.unwrap();
+        });
 
-        println!("SOCKET_TX WAS SENT {:?}", msg);
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<CanMessage> {
-        println!("inner next");
+    #[tracing::instrument(skip(self))]
+    async fn next(&mut self, reply_tx: tokio::sync::oneshot::Sender<CanMessage>) {
+        let socket_rx = self.socket_rx.clone();
+        let bus = self.bus;
 
-        if let Some(Ok((frame, _addr))) = self.socket_rx.next().await {
-            println!("inner inner some");
-            Some(CanMessage {
-                header: frame.header,
-                data: frame.data,
-                bus: self.bus,
-            })
-        } else {
-            println!("inner inner none");
-            None
-        }
-    }
-}
+        tokio::spawn(async move {
+            let mut socket_rx = socket_rx.lock().await;
 
-impl Drop for AsyncUdpNetworkImpl {
-    fn drop(&mut self) {
-        trace!("Closing UDP connection");
+            if let Some(Ok((frame, _addr))) = socket_rx.next().await {
+                reply_tx
+                    .send(CanMessage {
+                        header: frame.header,
+                        data: frame.data,
+                        bus,
+                    })
+                    .unwrap();
+            };
+        });
     }
 }

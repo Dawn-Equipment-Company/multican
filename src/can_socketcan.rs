@@ -3,6 +3,7 @@ use socketcan::{CANFrame, CANSocket};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
+use tracing::{debug, trace};
 
 /// SocketCAN adapter for mulitcan
 pub struct SocketCanNetwork {
