@@ -4,7 +4,8 @@ use multican::{CanBusType, CanConfig};
 // to see something, try cansend vcan0 123#4570
 
 fn main() {
-    env_logger::init();
+    tracing_subscriber::fmt::init();
+
     let cfg = vec![
         CanConfig {
             id: 0,
