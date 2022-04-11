@@ -38,24 +38,14 @@ impl AsyncSocketCanNetwork {
 
         tokio::spawn(async move {
             loop {
-                println!("loop start");
-
                 tokio::select! {
                     Some(Send(m)) = send_rx.recv() => {
-                        println!("SEND COMMAND received");
                         inner.send(m).await.unwrap()
                     }
                     Some(Next(tx)) = next_rx.recv() => {
-                        println!("next replied");
                         if let Some(m) = inner.next().await {
-                            println!("next inner replied");
                             tx.send(m).unwrap();
-                        } else  {
-                            println!("next got NONe");
                         }
-                    }
-                    else => {
-                        println!("else");
                     }
                 }
             }
@@ -74,8 +64,6 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
             .await
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::BrokenPipe, e));
 
-        println!("manaaged to send to inner");
-
         res
     }
 
@@ -89,10 +77,8 @@ impl AsyncCanNetwork for AsyncSocketCanNetwork {
             .unwrap();
 
         if let Ok(m) = reply_rx.await {
-            println!("some");
             Some(m)
         } else {
-            println!("NOne");
             None
         }
     }
