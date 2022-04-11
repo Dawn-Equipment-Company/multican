@@ -36,31 +36,6 @@ impl<'a> AsyncMultiCan {
         }
     }
 
-    // this works, but i don't know what bus the message came in on
-    /*pub fn stream(&mut self) -> tokio::sync::mpsc::Receiver<CanMessage> {
-        let (mut tx, rx) = mpsc::channel(10);
-        let mut sa = futures::stream::SelectAll::new();
-        for (_k, v) in self.networks.iter() {
-            sa.push(v.socket.clone());
-        }
-        let _ = tokio::spawn(async move {
-            while let Some(next) = sa.next().await {
-                if let Ok(frame) = next {
-                    println!("frame: {:?}", frame);
-                    let msg = CanMessage {
-                        header: frame.id(),
-                        data: frame.data().to_vec(),
-                        bus: 0,
-                    };
-                    tx.send(msg).await.unwrap();
-                }
-            }
-        });
-        rx
-    }*/
-
-    // this one gets the bus number correctly, but doesn't seem very efficient.  shouldn't have to
-    // spawn a task for each bus since they're async, but oh well
     #[tracing::instrument(skip(self))]
     pub async fn stream(&mut self) -> tokio_stream::wrappers::ReceiverStream<CanMessage> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
@@ -71,7 +46,11 @@ impl<'a> AsyncMultiCan {
             tokio::spawn(async move {
                 loop {
                     while let Some(next) = network.next().await {
-                        tx.send(next).await.unwrap();
+                        let tx = tx.clone();
+
+                        tokio::spawn(async move {
+                            tx.send(next).await.unwrap();
+                        });
                     }
                 }
             });
