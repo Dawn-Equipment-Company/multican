@@ -34,8 +34,6 @@ pub struct AsyncUdpNetwork {
 impl AsyncUdpNetwork {
     #[tracing::instrument]
     pub fn new(bus_number: u8) -> Self {
-        //let multicast_group = Ipv4Addr::new(239, 0, 0, bus_number + 222);
-
         let (send_tx, send_rx) = tokio::sync::mpsc::channel(32);
         let (next_tx, next_rx) = tokio::sync::mpsc::channel(32);
 
@@ -79,12 +77,11 @@ impl AsyncUdpNetwork {
 
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
-        socket.bind(&socket2::SockAddr::from(*addr))?;
-        // socket.set_nonblocking(true)?;
         socket.set_multicast_loop_v4(true)?;
         socket.set_reuse_address(true)?;
         socket.set_reuse_port(true)?;
         socket.join_multicast_v4(multi_addr.ip(), addr.ip())?;
+        socket.bind(&socket2::SockAddr::from(*addr))?;
 
         Ok(std::net::UdpSocket::from(socket))
     }
