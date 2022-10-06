@@ -138,7 +138,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        AsyncSocketCanNetwork::new(net_config.id, "can"),
+                        AsyncSocketCanNetwork::new(net_config.id, "can".to_string()),
                     );
                 }
                 #[cfg(windows)]
@@ -151,7 +151,7 @@ pub fn from_config_async<'a>(config: Vec<CanConfig>) -> AsyncMultiCan {
                 {
                     mc.add_adapter(
                         net_config.id,
-                        AsyncSocketCanNetwork::new(net_config.id, "vcan"),
+                        AsyncSocketCanNetwork::new(net_config.id, "vcan".to_string()),
                     );
                 }
                 #[cfg(windows)]

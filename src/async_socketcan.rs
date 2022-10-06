@@ -66,7 +66,7 @@ impl Drop for AsyncSocketCanNetwork {
 
 impl AsyncSocketCanNetwork {
     /// id is the network interface prefix, usually 'can' or 'vcan'
-    pub fn new(bus: u8, id: &'static str) -> Self {
+    pub fn new(bus: u8, id: String) -> Self {
         debug!("Initializing bus #{}", bus);
         let bus_id = format!("{}{}", id, bus);
         debug!("Opening bus number {} - id: {}", bus, bus_id);
